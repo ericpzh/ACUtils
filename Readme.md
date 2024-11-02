@@ -3,7 +3,7 @@
   - 非win64下载请到: https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.2
 - 解压并将所有文件丢到游戏根目录 `AC2025_0.1.1_win64/`
 - 运行一次游戏，游戏打开后退出（有概率触发windows defender）
-- 将Utils.dll扔进 `AC2025_0.1.1_win64/BepInEx/plugins`
+- 将[Utils.dll](https://github.com/ericpzh/ACUtils/blob/main/bin/Debug/netstandard2.1/Utils.dll)丢进 `AC2025_0.1.1_win64/BepInEx/plugins`
   
 # 功能
 - 倍速调整
