@@ -24,8 +24,14 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>lib\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>lib\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Splines">
+      <HintPath>lib\Unity.Splines.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

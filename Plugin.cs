@@ -1,10 +1,12 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Splines;
 
 namespace Utils
 {
@@ -68,9 +70,10 @@ namespace Utils
         [HarmonyPrefix]
         public static bool DisableAudio(ref bool ___audioEnd, string message, string voiceName, Action OnAudioComplete)
         {
-            if (Time.timeScale != 1)
+            if (audioDisabled)
             {
                 ___audioEnd = true;
+                Plugin.Log.LogInfo("Audio Skipped.");
                 return false;
             }
             return true;
@@ -83,6 +86,7 @@ namespace Utils
             TimeScaler();
             ArrivalRunwaySelector();
             SpwanIntervalSelector();
+            AudioDisabler();
             return true;
         }
 
@@ -107,6 +111,7 @@ namespace Utils
                     if (Input.GetKeyDown(timeSclaerKeys[i]))
                     {
                         Time.timeScale = 1 << i;
+                        audioDisabled = i > 0;
                         Plugin.Log.LogInfo("Game speed changed to: " + Time.timeScale);
                         break;
                     }
@@ -207,6 +212,18 @@ namespace Utils
             }
         }
 
+        static private void AudioDisabler() {
+            if (Input.GetKeyDown(KeyCode.M))
+            {
+                if (Time.timeScale != 1)
+                {
+                    return;
+                }
+                audioDisabled = !audioDisabled;
+                Plugin.Log.LogInfo("Audio Disable? " + audioDisabled);
+            }
+        }
+
         static KeyCode[] timeSclaerKeys = {KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B};
         static float prevTimeScale = 1f;
         static int runwayIndex = -1;
@@ -214,6 +231,7 @@ namespace Utils
         static int departureDurationMax = -1;
         static int landingDurationMin = -1;
         static int landingDurationMax = -1;
+        static bool audioDisabled = false;
     }
 
     public static class ReflectionExtensions
