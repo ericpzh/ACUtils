@@ -49,38 +49,41 @@ namespace Utils
         public static bool EdgeScroller(ref CameraSystem.BuilderCameraSystem __instance, ref Vector2 ___cameraMoveSpeed, ref Cinemachine.CinemachineFramingTransposer ___topdownFramingTransposer)
         {
             const float thres = 0.05f;
-            const float maxSpeed = 0.3f;
+            const float maxScrollSpeed = 0.3f;
             if (!__instance.LockCamera && (__instance.mode != CameraSystem.BuilderCameraSystem.Mode.Follow || !((UnityEngine.Object)(object)__instance.currentFollowTarget != (UnityEngine.Object)null)))
             {
                 float xdir = 0;
                 float ydir = 0;
+                // Normalized mouse position.
                 Vector2 pos = Camera.main.ScreenToViewportPoint(Input.mousePosition);
-                float x = Math.Max(Math.Min(1, pos.x), 0);
-                float y = Math.Max(Math.Min(1, pos.y), 0);
-                if (x < thres)
+                float mouseX = Math.Max(Math.Min(1, pos.x), 0);
+                float mouseY = Math.Max(Math.Min(1, pos.y), 0);
+                // Linear scrolling speed.
+                if (mouseX < thres)
                 {
-                    float speed = (thres - x) / thres * maxSpeed;
+                    float speed = (thres - mouseX) / thres * maxScrollSpeed;
                     xdir = speed;
                 }
-                else if (x > 1 - thres)
+                else if (mouseX > 1 - thres)
                 {
-                    float speed = (x - (1 - thres)) / thres * maxSpeed;
+                    float speed = (mouseX - (1 - thres)) / thres * maxScrollSpeed;
                     xdir = -speed;
                 }
-                if (y < thres)
+                if (mouseY < thres)
                 {
-                    float speed = (thres - y) / thres * maxSpeed;
+                    float speed = (thres - mouseY) / thres * maxScrollSpeed;
                     ydir = speed;
                 }
-                else if (y > 1 - thres)
+                else if (mouseY > 1 - thres)
                 {
-                    float speed = (y - (1 - thres)) / thres * maxSpeed;
+                    float speed = (mouseY - (1 - thres)) / thres * maxScrollSpeed;
                     ydir = -speed;
                 }
                 if (xdir == 0 && ydir == 0)
                 {
                     return true;
                 }
+                // Mostly ProcessDragMove() except xdir & ydir.
                 float cameraDistance = ___topdownFramingTransposer.m_CameraDistance;
                 float num1 = Mathf.InverseLerp(__instance.minOffsetLength, __instance.maxOffsetLength, cameraDistance);
                 float CameraMoveSpeed = Mathf.Lerp(___cameraMoveSpeed.x, ___cameraMoveSpeed.y, num1);
@@ -94,7 +97,6 @@ namespace Utils
                 val.y = 0f;
                 if (((Vector3)(val)).magnitude > 5f)
                 {
-                    // __instance.UnFollow();
                     __instance.SwitchToTopDownCam();
                 }
                 if ((UnityEngine.Object)(object)((Cinemachine.CinemachineVirtualCameraBase)__instance.topdownCam).Follow != (UnityEngine.Object)null)
