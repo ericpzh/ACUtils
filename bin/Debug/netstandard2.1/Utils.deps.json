@@ -15,8 +15,8 @@
           "UnityEngine.Modules": "2022.3.4",
           "Assembly-CSharp": "0.0.0.0",
           "Cinemachine": "0.0.0.0",
-          "Newtonsoft.Json": "13.0.0.0",
-          "Unity.Splines": "0.0.0.0"
+          "Unity.TextMeshPro": "0.0.0.0",
+          "UnityEngine.UI": "1.0.0.0"
         },
         "runtime": {
           "Utils.dll": {}
@@ -372,19 +372,19 @@
           }
         }
       },
-      "Newtonsoft.Json/13.0.0.0": {
+      "Unity.TextMeshPro/0.0.0.0": {
         "runtime": {
-          "Newtonsoft.Json.dll": {
-            "assemblyVersion": "13.0.0.0",
-            "fileVersion": "13.0.2.0"
+          "Unity.TextMeshPro.dll": {
+            "assemblyVersion": "0.0.0.0",
+            "fileVersion": "0.0.0.0"
           }
         }
       },
-      "Unity.Splines/0.0.0.0": {
+      "UnityEngine.UI/1.0.0.0": {
         "runtime": {
-          "Unity.Splines.dll": {
-            "assemblyVersion": "0.0.0.0",
-            "fileVersion": "0.0.0.0"
+          "UnityEngine.UI.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
           }
         }
       }
@@ -672,12 +672,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Newtonsoft.Json/13.0.0.0": {
+    "Unity.TextMeshPro/0.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "Unity.Splines/0.0.0.0": {
+    "UnityEngine.UI/1.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

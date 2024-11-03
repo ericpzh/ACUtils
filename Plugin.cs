@@ -1,13 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
-using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Splines;
-using UnityEngine.UIElements;
+using UnityEngine.UI;
 
 namespace Utils
 {
@@ -89,9 +90,9 @@ namespace Utils
                 float CameraMoveSpeed = Mathf.Lerp(___cameraMoveSpeed.x, ___cameraMoveSpeed.y, num1);
                 float num = xdir * CameraMoveSpeed * Time.unscaledDeltaTime;
                 float num2 = ydir * CameraMoveSpeed * Time.unscaledDeltaTime;
-                Vector3 right = ((Component)__instance.topdownCam).transform.right;
+                Vector3 right = ((UnityEngine.Component)__instance.topdownCam).transform.right;
                 ((Vector3)(right)).Normalize();
-                Vector3 up = ((Component)__instance.topdownCam).transform.up;
+                Vector3 up = ((UnityEngine.Component)__instance.topdownCam).transform.up;
                 ((Vector3)(up)).Normalize();
                 Vector3 val = (0f - num) * right + (0f - num2) * up;
                 val.y = 0f;
@@ -144,6 +145,56 @@ namespace Utils
                 return false;
             }
             return true;
+        }
+
+        [HarmonyPatch(typeof(StripView), "SetText")]
+        [HarmonyPostfix]
+        public static void StripText(ref StripView __instance, ref TMP_Text ___text)
+        {
+            bool isDeparture = __instance.aircraftController.isDeparture;
+            StripLabel label = __instance.aircraftController.GetComponent<StripLabel>();
+            if (label == null)
+            {
+                label = __instance.aircraftController.gameObject.AddComponent<StripLabel>();
+                label.destination = RandomDestination(isDeparture);
+            }
+            string destination = label.destination;
+            if (((Behaviour)__instance.aircraftController.landing).isActiveAndEnabled)
+            {
+                destination = __instance.aircraftController.landing.Runway.name;
+            }
+            string type = __instance.aircraftController.size == Aircraft.AircraftSize.H ? "B744" : "B738";
+            string optHeavy = __instance.aircraftController.size == Aircraft.AircraftSize.H ? "H/" : "";
+            ___text.text = " " + __instance.aircraftController.callSign + "\n";
+            ___text.text += " " + destination  + " | " + optHeavy + type + "\n";
+            ___text.fontSize *= 0.9f;
+            // ___text.rectTransform.sizeDelta = new Vector2(3, 1);
+            // string text = __instance.aircraftController.state.ToString();
+            // if (text.StartsWith("Departure"))
+            // {
+            //     text = text.Replace("Departure", "");
+            // }
+            // else if (text.StartsWith("Arrival"))
+            // {
+            //     text = text.Replace("Arrival", "");
+            // }
+            // ___text.text += " " + TranslateState(text);
+        }
+
+        [HarmonyPatch(typeof(StripView), "OnProgressButtonClicked")]
+        [HarmonyPostfix]
+        public static void StripOnClick(ref StripView __instance, ref UnityEngine.UI.Image ___buttonImage)
+        {
+            bool isDeparture = __instance.aircraftController.isDeparture;
+            Color color = isDeparture ? new Color(0.7f, 1f, 0.7f, 0.7f) : new Color(1f, 0.9f, 0.7f, 0.7f);
+            if (focusedStrip != null)
+            {
+                ((Graphic)focusedButtonImage).color = focusedColor;
+            }
+            focusedStrip = __instance;
+            focusedButtonImage = ___buttonImage;
+            focusedColor = ((Graphic)___buttonImage).color;
+            ((Graphic)___buttonImage).color = color;
         }
 
         [HarmonyPatch(typeof(CameraSystem.BuilderCameraSystem), "Update")]
@@ -270,6 +321,50 @@ namespace Utils
             }
         }
 
+        static private string TranslateState(string state)
+        {
+            Dictionary<string, string> stateMap = new Dictionary<string, string>
+            {
+                ["WaitPushbackClearance"] = "已放行",
+                ["PushbackInProgress"] = "推出中",
+                ["WaitTaxiClearance"] = "已推出",
+                ["TaxiInProgress"] = "滑行中",
+                ["HoldShort"] = "等待中",
+                ["TaxiToLineUpAndWait"] = "跑道内等待中",
+                ["LinedUpAndWaiting"] = "跑道内等待中",
+                ["TaxiToTakeoff"] = "起飞中",
+                ["TakeoffInProgress"] = "起飞中",
+                ["HandoffComplete"] = "已离场",
+                ["Holding"] = "等待中",
+                ["Approaching"] = "着陆中",
+                ["ClearedToLand"] = "着陆中",
+                ["Landing"] = "着陆中",
+                ["ExitedRunway"] = "已着陆",
+                ["TaxiToApron"] = "滑行中",
+                ["AtApron"] = "已到达",
+            };
+            if(!stateMap.ContainsKey(state))
+            {
+                return state;
+            }
+            return stateMap[state];
+        }
+
+        static private string RandomDestination(bool isDeparture)
+        {
+            if (isDeparture)
+            {
+                string[] cities = {
+                    // "长春", "长沙", "重庆", "大连", "福州", "广州", "哈尔滨", "海口", "武汉", "乌鲁木齐", 
+                    // "厦门", "西安"
+                    "RJAA", "ZSSS", "ZGGG", "ZSAM", "ZUCK", "ZUTF", "RKSI", "ZHHH", "ZJSY", "ZYHB", 
+                    "ZWWW", "ZLXY", "ZSNJ", "ZPPP", "ZYTL", "ZGNN", "ZGHA", "RJBB", "VVNB", "ZJHK",
+                };
+                return cities[UnityEngine.Random.Range(0, cities.Length)];
+            }
+            return UnityEngine.Random.Range(100, 300).ToString();
+        }
+
         static KeyCode[] timeScalerKeys = {KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B};
         static KeyCode[] spwanKeys = {KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0};
         static float prevTimeScale = 1f;
@@ -279,6 +374,14 @@ namespace Utils
         static int landingDurationMin = -1;
         static int landingDurationMax = -1;
         static bool audioDisabled = false;
+        static StripView focusedStrip = null;
+        static UnityEngine.UI.Image focusedButtonImage = null;
+        static Color focusedColor;
+    }
+
+    public class StripLabel : MonoBehaviour
+    {
+        public string destination;
     }
 
     public static class ReflectionExtensions
