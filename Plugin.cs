@@ -7,6 +7,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Splines;
+using UnityEngine.UIElements;
 
 namespace Utils
 {
@@ -106,9 +107,9 @@ namespace Utils
             }
             else
             {
-                for (int i = 0; i < timeSclaerKeys.Length; i++)
+                for (int i = 0; i < timeScalerKeys.Length; i++)
                 {
-                    if (Input.GetKeyDown(timeSclaerKeys[i]))
+                    if (Input.GetKeyDown(timeScalerKeys[i]))
                     {
                         Time.timeScale = 1 << i;
                         audioDisabled = i > 0;
@@ -145,69 +146,48 @@ namespace Utils
         {
             if (Input.GetKey(KeyCode.LeftControl))
             {
-                if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Alpha1))
+                for (int i = 0; i < spwanKeys.Length; i++)
                 {
-                    departureDurationMin = -1;
-                    departureDurationMax = -1;
-                    Plugin.Log.LogInfo("Reset departure spwan.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha2))
-                {
-                    departureDurationMin = 75 / 2;
-                    departureDurationMax = 150 / 2;
-                    Plugin.Log.LogInfo("Departure spwan 2x.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha3))
-                {
-                    departureDurationMin = 75 / 3;
-                    departureDurationMax = 150 / 3;
-                    Plugin.Log.LogInfo("Departure spwan 3x.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha4))
-                {
-                    departureDurationMin = 75 / 4;
-                    departureDurationMax = 150 / 4;
-                    Plugin.Log.LogInfo("Departure spwan 4x.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha5))
-                {
-                    departureDurationMin = 75 / 5;
-                    departureDurationMax = 150 / 5;
-                    Plugin.Log.LogInfo("Departure spwan 5x.");
+                    if (Input.GetKeyDown(spwanKeys[i]))
+                    {
+                        if (i == 0)
+                        {
+                            departureDurationMin = -1;
+                            departureDurationMax = -1;
+                            Plugin.Log.LogInfo("Reset departure spwan.");
+                        }
+                        else
+                        {
+                            int scale = i + 1;
+                            departureDurationMin = 75 / scale;
+                            departureDurationMax = 200 / scale;
+                            Plugin.Log.LogInfo("Departure spwan " + scale + "x.");
+                        }
+
+                    }
                 }
             }
-
-            if (Input.GetKey(KeyCode.LeftAlt))
+            else if (Input.GetKey(KeyCode.LeftAlt))
             {
-                if (Input.GetKeyDown(KeyCode.Alpha0) || Input.GetKeyDown(KeyCode.Alpha1))
+                for (int i = 1; i < spwanKeys.Length; i++)
                 {
-                    landingDurationMin = -1;
-                    landingDurationMax = -1;
-                    Plugin.Log.LogInfo("Reset arrival spwan.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha2))
-                {
-                    landingDurationMin = 75 / 2;
-                    landingDurationMax = 200 / 2;
-                    Plugin.Log.LogInfo("Arrival spwan 2x.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha3))
-                {
-                    landingDurationMin = 75 / 3;
-                    landingDurationMax = 200 / 3;
-                    Plugin.Log.LogInfo("Arrival spwan 3x.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha4))
-                {
-                    landingDurationMin = 75 / 4;
-                    landingDurationMax = 200 / 4;
-                    Plugin.Log.LogInfo("Arrival spwan 4x.");
-                }
-                else if (Input.GetKeyDown(KeyCode.Alpha5))
-                {
-                    landingDurationMin = 75 / 5;
-                    landingDurationMax = 200 / 5;
-                    Plugin.Log.LogInfo("Arrival spwan 5x.");
+                    if (Input.GetKeyDown(spwanKeys[i]))
+                    {
+                        if (i == 0)
+                        {
+                            landingDurationMin = -1;
+                            landingDurationMax = -1;
+                            Plugin.Log.LogInfo("Reset arrival spwan.");
+                        }
+                        else
+                        {
+                            int scale = i + 1;
+                            landingDurationMin = 75 / scale;
+                            landingDurationMax = 200 / scale;
+                            Plugin.Log.LogInfo("Arrival spwan " + scale + "x.");
+                        }
+
+                    }
                 }
             }
         }
@@ -224,7 +204,8 @@ namespace Utils
             }
         }
 
-        static KeyCode[] timeSclaerKeys = {KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B};
+        static KeyCode[] timeScalerKeys = {KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B};
+        static KeyCode[] spwanKeys = {KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0};
         static float prevTimeScale = 1f;
         static int runwayIndex = -1;
         static int departureDurationMin = -1;
