@@ -41,8 +41,72 @@ namespace Utils
         [HarmonyPostfix]
         public static void AircraftModifier(Aircraft.AircraftController.State state, ref Aircraft.AircraftController __instance)
         {
-            // __instance.callSign = "CA3115";
+            // __instance.callSign = UnityEngine.Random.Range(0, 10) > 5 ? "CA3115" : "ES1111";
         }
+
+        [HarmonyPatch(typeof(CameraSystem.BuilderCameraSystem), "ProcessDragMove")]
+        [HarmonyPrefix]
+        public static bool EdgeScroller(ref CameraSystem.BuilderCameraSystem __instance, ref Vector2 ___cameraMoveSpeed, ref Cinemachine.CinemachineFramingTransposer ___topdownFramingTransposer)
+        {
+            const float thres = 0.05f;
+            const float maxSpeed = 0.3f;
+            if (!__instance.LockCamera && (__instance.mode != CameraSystem.BuilderCameraSystem.Mode.Follow || !((UnityEngine.Object)(object)__instance.currentFollowTarget != (UnityEngine.Object)null)))
+            {
+                float xdir = 0;
+                float ydir = 0;
+                Vector2 pos = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+                float x = Math.Max(Math.Min(1, pos.x), 0);
+                float y = Math.Max(Math.Min(1, pos.y), 0);
+                if (x < thres)
+                {
+                    float speed = (thres - x) / thres * maxSpeed;
+                    xdir = speed;
+                }
+                else if (x > 1 - thres)
+                {
+                    float speed = (x - (1 - thres)) / thres * maxSpeed;
+                    xdir = -speed;
+                }
+                if (y < thres)
+                {
+                    float speed = (thres - y) / thres * maxSpeed;
+                    ydir = speed;
+                }
+                else if (y > 1 - thres)
+                {
+                    float speed = (y - (1 - thres)) / thres * maxSpeed;
+                    ydir = -speed;
+                }
+                if (xdir == 0 && ydir == 0)
+                {
+                    return true;
+                }
+                float cameraDistance = ___topdownFramingTransposer.m_CameraDistance;
+                float num1 = Mathf.InverseLerp(__instance.minOffsetLength, __instance.maxOffsetLength, cameraDistance);
+                float CameraMoveSpeed = Mathf.Lerp(___cameraMoveSpeed.x, ___cameraMoveSpeed.y, num1);
+                float num = xdir * CameraMoveSpeed * Time.unscaledDeltaTime;
+                float num2 = ydir * CameraMoveSpeed * Time.unscaledDeltaTime;
+                Vector3 right = ((Component)__instance.topdownCam).transform.right;
+                ((Vector3)(right)).Normalize();
+                Vector3 up = ((Component)__instance.topdownCam).transform.up;
+                ((Vector3)(up)).Normalize();
+                Vector3 val = (0f - num) * right + (0f - num2) * up;
+                val.y = 0f;
+                if (((Vector3)(val)).magnitude > 5f)
+                {
+                    // __instance.UnFollow();
+                    __instance.SwitchToTopDownCam();
+                }
+                if ((UnityEngine.Object)(object)((Cinemachine.CinemachineVirtualCameraBase)__instance.topdownCam).Follow != (UnityEngine.Object)null)
+                {
+                    Transform follow = ((Cinemachine.CinemachineVirtualCameraBase)__instance.topdownCam).Follow;
+                    follow.position += val;
+                }
+                return false;
+            }
+            return true;
+        }
+
 
         [HarmonyPatch(typeof(Schedule.FlightScheduler), "GetRandomRunway")]
         [HarmonyPostfix]
