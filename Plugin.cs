@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Reflection;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -50,7 +51,7 @@ namespace Utils
         public static bool EdgeScroller(ref CameraSystem.BuilderCameraSystem __instance, ref Vector2 ___cameraMoveSpeed, ref Cinemachine.CinemachineFramingTransposer ___topdownFramingTransposer)
         {
             const float thres = 0.05f;
-            const float maxScrollSpeed = 0.3f;
+            const float maxScrollSpeed = 0.5f;
             if (!__instance.LockCamera && (__instance.mode != CameraSystem.BuilderCameraSystem.Mode.Follow || !((UnityEngine.Object)(object)__instance.currentFollowTarget != (UnityEngine.Object)null)))
             {
                 float xdir = 0;
@@ -136,7 +137,7 @@ namespace Utils
 
         [HarmonyPatch(typeof(Aircraft.AircraftController), "RegisterAudio")]
         [HarmonyPrefix]
-        public static bool DisableAudio(ref bool ___audioEnd, string message, string voiceName, Action OnAudioComplete)
+        public static bool DisableAudio(string message, string voiceName, Action OnAudioComplete, ref bool ___audioEnd)
         {
             if (audioDisabled)
             {
@@ -163,7 +164,7 @@ namespace Utils
             {
                 destination = __instance.aircraftController.landing.Runway.name;
             }
-            string type = __instance.aircraftController.size == Aircraft.AircraftSize.H ? "B744" : "B738";
+            string type = __instance.aircraftController.size == Aircraft.AircraftSize.H ? "B748" : "B738";
             string optHeavy = __instance.aircraftController.size == Aircraft.AircraftSize.H ? "H/" : "";
             ___text.text = " " + __instance.aircraftController.callSign + "\n";
             ___text.text += " " + destination  + " | " + optHeavy + type + "\n";
@@ -195,6 +196,73 @@ namespace Utils
             focusedButtonImage = ___buttonImage;
             focusedColor = ((Graphic)___buttonImage).color;
             ((Graphic)___buttonImage).color = color;
+
+            // Need to also show/hide command window.
+            if (activeAircraft == __instance.aircraftController)
+            {
+                if (activeIndicator != null && activeIndicator.IsExpanded)
+                {
+                    activeIndicator.Shrink();
+                    UIComponents.AircraftIndicator.ShrinkCurrent();
+                }
+                else
+                {
+                    activeIndicator?.Expand();
+                }
+                return;
+            }
+
+            UIComponents.AircraftIndicatorManager aircraftIndicatorManager = ReflectionExtensions.GetFieldValue<UIComponents.AircraftIndicatorManager>(__instance.aircraftController, "aircraftIndicatorManager");
+            if (aircraftIndicatorManager == null)
+            {
+                return;
+            }
+
+            UIComponents.AircraftIndicatorWrapper aircraftIndicatorWrapper = null;
+            foreach (UIComponents.AircraftIndicatorWrapper wrapper in aircraftIndicatorManager.GetComponentsInChildren<UIComponents.AircraftIndicatorWrapper>())
+            {
+                if (ReflectionExtensions.GetFieldValue<Aircraft.AircraftController>(wrapper, "aircraft") == __instance.aircraftController)
+                {
+                    aircraftIndicatorWrapper = wrapper;
+                    break;
+                }
+            }
+            if (aircraftIndicatorWrapper == null)
+            {
+                return;
+            }
+            
+            UIComponents.AircraftIndicator indicator = ReflectionExtensions.GetFieldValue<UIComponents.AircraftIndicator>(aircraftIndicatorWrapper, "indicator");
+            activeIndicator?.Shrink();
+            UIComponents.AircraftIndicator.ShrinkCurrent();
+            indicator?.Expand();
+            activeAircraft = __instance.aircraftController;
+            activeIndicator = indicator;
+        }
+
+        [HarmonyPatch(typeof(UIComponents.AircraftIndicatorWrapper), "OnIndicatorExpand")]
+        [HarmonyPrefix]
+        public static bool IndicatorOnClickPrefix(object sender, EventArgs e, ref Aircraft.AircraftController ___aircraft)
+        {
+            ___aircraft.OnPointerClick(null);
+            return true;
+        }
+
+        [HarmonyPatch(typeof(UIComponents.AircraftIndicatorWrapper), "OnIndicatorExpand")]
+        [HarmonyPostfix]
+        public static void IndicatorOnClickPostfix(object sender, EventArgs e, ref Vector2 ___positionWhenExpand, ref Vector2 ___positionBeforeExpand)
+        {
+            ___positionWhenExpand = Camera.main.ViewportToScreenPoint(new Vector2(0.6f, 0.5f));
+            ___positionBeforeExpand = new Vector2(0.6f, 0.5f);
+        }
+
+        [HarmonyPatch(typeof(CameraSystem.BuilderCameraSystem), "Start")]
+        [HarmonyPostfix]
+        public static void CameraInitPatches(ref CameraSystem.BuilderCameraSystem __instance, ref float ___cameraZoomSpeed)
+        {
+            __instance.minOffsetLength = 100f;
+            __instance.maxOffsetLength = 6000f;
+            ___cameraZoomSpeed = 500f;
         }
 
         [HarmonyPatch(typeof(CameraSystem.BuilderCameraSystem), "Update")]
@@ -309,7 +377,8 @@ namespace Utils
             }
         }
 
-        static private void AudioDisabler() {
+        static private void AudioDisabler()
+        {
             if (Input.GetKeyDown(KeyCode.M))
             {
                 if (Time.timeScale != 1)
@@ -377,6 +446,8 @@ namespace Utils
         static StripView focusedStrip = null;
         static UnityEngine.UI.Image focusedButtonImage = null;
         static Color focusedColor;
+        static Aircraft.AircraftController activeAircraft = null;
+        static UIComponents.AircraftIndicator activeIndicator = null;
     }
 
     public class StripLabel : MonoBehaviour
