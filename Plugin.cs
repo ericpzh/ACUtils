@@ -182,20 +182,27 @@ namespace Utils
             // ___text.text += " " + TranslateState(text);
         }
 
-        [HarmonyPatch(typeof(StripView), "OnProgressButtonClicked")]
+        [HarmonyPatch(typeof(StripView), "Awake")]
         [HarmonyPostfix]
-        public static void StripOnClick(ref StripView __instance, ref UnityEngine.UI.Image ___buttonImage)
+        public static void ObtainColors(ref Color ___departureColor, ref Color ___arrivalColor)
         {
+           departureColor = ___departureColor;
+           arrivalColor = ___arrivalColor;
+        }
+
+        [HarmonyPatch(typeof(StripView), "OnProgressButtonClicked")]
+        [HarmonyPrefix]
+        public static bool StripOnClick(ref StripView __instance, ref UnityEngine.UI.Image ___buttonImage)
+        {
+            // Highlight active aircraft.
             bool isDeparture = __instance.aircraftController.isDeparture;
-            Color color = isDeparture ? new Color(0.7f, 1f, 0.7f, 0.7f) : new Color(1f, 0.9f, 0.7f, 0.7f);
-            if (focusedStrip != null)
+            activeStripColor = isDeparture ? new Color(0.7f, 1f, 0.7f, 0.7f) : new Color(1f, 0.9f, 0.7f, 0.7f);
+            if (focusedButtonImage != null)
             {
-                ((Graphic)focusedButtonImage).color = focusedColor;
+                ((Graphic)focusedButtonImage).color = previousStripColor;
             }
-            focusedStrip = __instance;
             focusedButtonImage = ___buttonImage;
-            focusedColor = ((Graphic)___buttonImage).color;
-            ((Graphic)___buttonImage).color = color;
+            previousStripColor = ((Graphic)___buttonImage).color;
 
             // Need to also show/hide command window.
             if (activeAircraft == __instance.aircraftController)
@@ -208,14 +215,15 @@ namespace Utils
                 else
                 {
                     activeIndicator?.Expand();
+                    focusedButtonImage.color = activeStripColor;
                 }
-                return;
+                return true;
             }
 
             UIComponents.AircraftIndicatorManager aircraftIndicatorManager = ReflectionExtensions.GetFieldValue<UIComponents.AircraftIndicatorManager>(__instance.aircraftController, "aircraftIndicatorManager");
             if (aircraftIndicatorManager == null)
             {
-                return;
+                return true;
             }
 
             UIComponents.AircraftIndicatorWrapper aircraftIndicatorWrapper = null;
@@ -229,7 +237,7 @@ namespace Utils
             }
             if (aircraftIndicatorWrapper == null)
             {
-                return;
+                return true;
             }
             
             UIComponents.AircraftIndicator indicator = ReflectionExtensions.GetFieldValue<UIComponents.AircraftIndicator>(aircraftIndicatorWrapper, "indicator");
@@ -238,13 +246,39 @@ namespace Utils
             indicator?.Expand();
             activeAircraft = __instance.aircraftController;
             activeIndicator = indicator;
+            focusedButtonImage.color = activeStripColor;
+            return true;
+        }
+
+        [HarmonyPatch(typeof(UIComponents.AircraftIndicator), "Shrink")]
+        [HarmonyPostfix]
+        public static void IndicatorShrink()
+        {
+            if (focusedButtonImage != null)
+            {
+                // Reset strip color.
+                focusedButtonImage.color = previousStripColor;
+            }
         }
 
         [HarmonyPatch(typeof(UIComponents.AircraftIndicatorWrapper), "OnIndicatorExpand")]
         [HarmonyPrefix]
         public static bool IndicatorOnClickPrefix(object sender, EventArgs e, ref Aircraft.AircraftController ___aircraft)
         {
+            // Focus on the aircraft.
             ___aircraft.OnPointerClick(null);
+            if (focusedButtonImage != null)
+            {
+                focusedButtonImage.color = activeStripColor;
+            }
+            if (___aircraft != activeAircraft)
+            {
+                // Reset indicator.
+                activeIndicator?.Shrink();
+                UIComponents.AircraftIndicator.ShrinkCurrent();
+                activeIndicator = null;
+                activeAircraft = null;
+            }
             return true;
         }
 
@@ -252,6 +286,7 @@ namespace Utils
         [HarmonyPostfix]
         public static void IndicatorOnClickPostfix(object sender, EventArgs e, ref Vector2 ___positionWhenExpand, ref Vector2 ___positionBeforeExpand)
         {
+            // Align indicator position.
             ___positionWhenExpand = Camera.main.ViewportToScreenPoint(new Vector2(0.6f, 0.5f));
             ___positionBeforeExpand = new Vector2(0.6f, 0.5f);
         }
@@ -436,6 +471,8 @@ namespace Utils
 
         static KeyCode[] timeScalerKeys = {KeyCode.Z, KeyCode.X, KeyCode.C, KeyCode.V, KeyCode.B};
         static KeyCode[] spwanKeys = {KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9, KeyCode.Alpha0};
+        static Color departureColor = new Color(0.7f, 1f, 0.7f, 0.7f);
+        static Color arrivalColor = new Color(1f, 0.9f, 0.7f, 0.7f);
         static float prevTimeScale = 1f;
         static int runwayIndex = -1;
         static int departureDurationMin = -1;
@@ -443,9 +480,9 @@ namespace Utils
         static int landingDurationMin = -1;
         static int landingDurationMax = -1;
         static bool audioDisabled = false;
-        static StripView focusedStrip = null;
         static UnityEngine.UI.Image focusedButtonImage = null;
-        static Color focusedColor;
+        static Color previousStripColor;
+        static Color activeStripColor;
         static Aircraft.AircraftController activeAircraft = null;
         static UIComponents.AircraftIndicator activeIndicator = null;
     }
